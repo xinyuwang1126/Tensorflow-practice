@@ -16,18 +16,25 @@ import sys
 
 
 reload(sys)  
-sys.setdefaultencoding('utf8')
+sys.setdefaultencoding('utf-8')
 
 
 pos_file = 'pos.txt'
 neg_file = 'neg.txt'
+
+
 
 # build vocabulary
 def create_lexicon(pos_file, neg_file):
 	lex = []
 	# load file
 	def process_file(f):
-		with open(pos_file, 'r') as f:
+		for line in open(pos_file):
+			lex = []
+			words = word_tokenize(line.lower())
+			lex += words
+		return lex
+		'''with open(pos_file, 'r') as f:
 			lex = []
 			lines = f.readlines()
 			
@@ -35,7 +42,7 @@ def create_lexicon(pos_file, neg_file):
 				line = line.decode("utf8")
 				words = word_tokenize(line.lower())
 				lex += words
-			return lex
+			return lex'''
 
 	lex += process_file(pos_file)
 	lex += process_file(neg_file)
@@ -52,9 +59,6 @@ def create_lexicon(pos_file, neg_file):
 		if word_count[word] < 2000 and word_count[word] > 20:  #
 			lex.append(word)        #
 	return lex
-
-lex = create_lexicon(pos_file, neg_file)
-#lex contains words that have appeared in the text
 
 
 def normalize_dataset(lex):
@@ -76,6 +80,7 @@ def normalize_dataset(lex):
 		for line in lines:
 			one_sample = string_to_vector(lex, line, [1,0])  #
 			dataset.append(one_sample)
+	count = 0
 	with open(neg_file, 'r') as f:
 		lines = f.readlines()
 		for line in lines:
@@ -85,6 +90,9 @@ def normalize_dataset(lex):
 	#print(len(dataset))
 	return dataset
 
+
+lex = create_lexicon(pos_file, neg_file)
+#lex contains words that have appeared in the text
 dataset = normalize_dataset(lex)
 random.shuffle(dataset)
 """
@@ -128,7 +136,7 @@ def neural_network(data):
 
 	return layer_output
 
-batch_size = 50
+batch_size = 64
 
 X = tf.placeholder('float', [None, len(train_dataset[0][0])])
 #[None, len(train_x)]
@@ -136,12 +144,12 @@ Y = tf.placeholder('float')
 
 def train_neural_network(X, Y):
 	predict = neural_network(X)
-	cost_func = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(predict, Y))
+	cost_func = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=predict, labels=Y))
 	optimizer = tf.train.AdamOptimizer().minimize(cost_func)  # learning rate 0.001
 
-	epochs = 13
+	epochs = 15
 	with tf.Session() as session:
-		session.run(tf.initialize_all_variables())
+		session.run(tf.global_variables_initializer())
 		epoch_loss = 0
 
 		i = 0
